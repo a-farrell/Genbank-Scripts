@@ -69,7 +69,7 @@ def main():
                 if f.endswith(".csv"):
                         products = makedicts(f)
                         if opts.isDebug == True: print("#products in "+f+": "+str(len(products.keys())))
-                        finaldict[f[:-4]]=products
+                        finaldict[f[len(opts.inputdir):-4]]=products
                         allProducts=allProducts+list(products.keys())
 #                        for key,value in products.items():
 #                                product = value
