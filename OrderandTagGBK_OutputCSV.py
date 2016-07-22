@@ -15,6 +15,9 @@ options.add_option("-i","--infile",dest="inputfile",
 options.add_option("-o","--outfile",dest="outputfile",
                    help="output file (.gbk)")
 options.add_option("-p","--prefix",dest="locus_prefix",help="prefix for all locus tags")
+options.add_option("--fasta",dest="write_fasta",
+					action="store_true", default=False,
+					help="specify if fasta output is desired.")
                 
 
 def readfile(oldgbk):
