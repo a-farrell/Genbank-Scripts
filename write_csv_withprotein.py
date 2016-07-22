@@ -32,19 +32,31 @@ def readgbkprod(filename):
 	i=0
 	prod=""
 	SP=""
+	count=0
 	for line in lines:
 		if i==1 and line[21]!= '/':
-			prod = prod + line[20:]
-		if i==1 and line[21]== '/':
+			if "repeat_region" in line or "     gene" in line:
+				prodnew = prod.replace("\"","")
+				prodfin = prodnew.replace("\n","")
+				count+=1
+				tags[SP] = prodfin
+				i=0
+			else:
+				prod = prod + line[20:]
+		if i==1 and line[21] == '/':
 			prodnew = prod.replace("\"","")
 			prodfin = prodnew.replace("\n","")
+			count+=1
 			tags[SP] = prodfin
 			i=0
 		if "/locus_tag" in line:
-			SP = line[33:44]
+			SPna = line[33:] 
+			SPn = SPna.replace("\"","")
+			SP = SPn.replace("\n","")
 		if "/product" in line:
 			prod = line[31:]
 			i=1
+	print "There are " + str(count) + " genes."
 	return tags
 
 # Read gbk file and return a dictionary of locus tag, protein translation entries 
