@@ -240,7 +240,7 @@ def readgbkprot(filename):
 			a=1		
 	return prot
 
-# Print dictionary in two columns of out csv file
+# Print dictionary in two columns of out csv file with protein translations
 def makecsv(prot,tags,otherfilename):
 	writer = csv.writer(open(otherfilename,'wb'))
 	writer.writerow(["Locus Tag","Product","Protein Translation"])
@@ -250,7 +250,7 @@ def makecsv(prot,tags,otherfilename):
 		else:
 			writer.writerow([key,value,"X"])
 
-
+## if the --fasta option is used via command line, the script will output a fasta file with all proteins, not a CSV file with a table
 def makefasta(prot,tags,otherfilename):
 	writer = open(otherfilename,"wb")
 
