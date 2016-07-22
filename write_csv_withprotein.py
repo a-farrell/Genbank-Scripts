@@ -103,7 +103,7 @@ def makefasta(prot,tags,otherfilename):
 	writer = open(otherfilename,"wb")
 
 	for key, value in tags.items():
-		fastaheader=">"+key+"|"+value+"\n"
+		fastaheader=">tvo| [gene="+key+"] [protein="+value+"]\n"
 		writer.write(fastaheader)
 		if key in prot:
 			writer.write(prot[key]+"\n")
