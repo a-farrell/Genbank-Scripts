@@ -4,19 +4,24 @@
 ## This program takes an input GBK file and writes an output CSV containing the locus tag 
 ## and gene product for referencing
 
+## Defne Surujon - July 21, 2016
+## Adding option to output fasta proteome instead of csv
+
 import os
 import csv 
 from optparse import OptionParser
 
-options = OptionParser(usage='%prog input output ',
-                       description="Specify input gbk file and output csv file")
+options = OptionParser(usage='%prog input output --fasta',
+                       description="Specify input gbk file and output file, and whether the output will be in fasta format")
 
 options.add_option("-i","--infile",dest="inputfile",
                    help="Input file (.gbk)")
 options.add_option("-o","--outfile",dest="outputfile",
                    help="output file (.csv)")
-                   
-                   
+options.add_option("--fasta",dest="write_fasta",
+			action="store_true", default=False,
+			help="specify if fasta output is desired.")                   
+
 # Read gbk file and return a dictionary of locus tag, product entries                   
 def readgbkprod(filename):
 	f=open(filename)
@@ -93,13 +98,27 @@ def makecsv(prot,tags,otherfilename):
 		else:
 			writer.writerow([key,value,"X"])
 
+def makefasta(prot,tags,otherfilename):
+	writer = open(otherfilename,"w")
 
+	for key, value in tags.items():
+		fastaheader=">"+key+"|"+value+"\n"
+		writer.write(fastaheader)
+		if key in prot:
+			writer.write(prot[key]+"\n")
+		else:
+			writer.write("X\n")
+			
+	writer.close()
 
 def main():
 	opts, args = options.parse_args()
 	locus = readgbkprod(opts.inputfile)
 	trans = readgbkprot(opts.inputfile)
-	makecsv(trans,locus,opts.outputfile)
+	if opts.write_fasta==False:
+		makecsv(trans,locus,opts.outputfile)
+	else:
+		makefasta(trans,locus,opts.outputfile)
 
 if __name__ == '__main__':
     main()
