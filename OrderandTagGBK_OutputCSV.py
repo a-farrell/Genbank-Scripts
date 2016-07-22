@@ -248,6 +248,18 @@ def makecsv(prot,tags,otherfilename):
 			writer.writerow([key,value,"X"])
 
 
+def makefasta(prot,tags,otherfilename):
+	writer = open(otherfilename,"wb")
+
+	for key, value in tags.items():
+		fastaheader=">"+key+"|"+value+"\n"
+		writer.write(fastaheader)
+		if key in prot:
+			writer.write(prot[key]+"\n")
+		else:
+			writer.write("X\n")
+			
+	writer.close()
 
 ## The main function will create an ordered GBK file with RNA genes placed correctly and return it as Intermediate.gbk
 ## It then incorporates the locus tags into the Intermediate.gbk and returns the user-inputted GBK file
@@ -268,7 +280,11 @@ def main():
 	CSVOUT += "csv"
 	locus = readgbkprod(opts.outputfile)
 	trans = readgbkprot(opts.outputfile)
-	makecsv(trans,locus,CSVOUT)
+	if opts.write_fasta==False:
+		makecsv(trans,locus,CSVOUT)
+	else:
+		FASTA = CSVOUT[:-3] + "fasta"
+		makefasta(trans,locus,FASTA)
 
 if __name__ == '__main__':
 	main()
