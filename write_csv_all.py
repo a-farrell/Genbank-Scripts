@@ -68,7 +68,7 @@ def readgbkprot(filename):
 	a=0
 	SP=""
 	seq=""
-	for line in lines[:-1]:
+	for line in lines[:-2]:
 		if "     CDS        " in line:
 			i=1
 		if line[6:9] == "RNA":
