@@ -7,13 +7,14 @@ import re
 from optparse import OptionParser
 import csv
 
-options = OptionParser(usage='%prog input output ',
-                       description="Specify input gbk file and output file")
+options = OptionParser(usage='%prog -i input -o output -p locus_prefix',
+                       description="Specify input gbk file, output file and a prefix for locus tags")
 
 options.add_option("-i","--infile",dest="inputfile",
                    help="Input file (.gbk)")
 options.add_option("-o","--outfile",dest="outputfile",
                    help="output file (.gbk)")
+options.add_option("-p","--prefix",dest="locus_prefix",help="prefix for all locus tags")
                 
 
 def readfile(oldgbk):
@@ -135,12 +136,12 @@ def makelookupdict(dict):
 	
 ## Takes previously made ascending list and look-up dictionary to add locus tags into a user-specified 
 ## new GBK file according to the groups of N's in the sequence
-def insertlocustag(oldgbk,ascendinglist,lookupdict,newgbk):
+def insertlocustag(oldgbk,ascendinglist,lookupdict,newgbk,locus):
 	f=open(oldgbk)
 	lines = f.readlines()
 	f.close()
 	genecount = 5
-	locus = "SPS01"     #  Must be altered with each new genome	
+	
 	a = open(newgbk,'w')
 	for line in lines[:-1]:
 		if "     CDS             " not in line and line[6:9] != "RNA":
@@ -251,16 +252,17 @@ def makecsv(prot,tags,otherfilename):
 ## The main function will create an ordered GBK file with RNA genes placed correctly and return it as Intermediate.gbk
 ## It then incorporates the locus tags into the Intermediate.gbk and returns the user-inputted GBK file
 ## The main function then creates a csv spreadsheet of a Product-Locus Tag-Translation
-## MUST ALTER LINE 143 FOR SCRIPT
+
 def main():
 	opts,args = options.parse_args()
 	correctorder,seq = readfile(opts.inputfile)
+	locustags_prefix=str(opts.locus_prefix)
 	writenewgbk(opts.inputfile,correctorder,seq,"Intermediate.gbk")
 	seq = getseqlist("Intermediate.gbk")
 	Ndict = obtaindict(seq)
 	asclist = getincreasinglist(Ndict)
 	lookup = makelookupdict(Ndict)
-	insertlocustag("Intermediate.gbk",asclist,lookup,opts.outputfile)
+	insertlocustag("Intermediate.gbk",asclist,lookup,opts.outputfile,locustags_prefix)
 	CSVOUT = ""
 	CSVOUT = opts.outputfile[:-3]
 	CSVOUT += "csv"
