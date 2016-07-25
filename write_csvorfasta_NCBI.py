@@ -92,7 +92,7 @@ def readgbkprot(filename):
 				i=0
 				b=0
 			if a == 1:
-				if "repeat_region" or "     gene            " or "ORIGIN" in line:
+				if "repeat_region" in line or "     gene            " in line or "ORIGIN" in line:
 					seqnew = seq.replace("\"","")
 					seqrealnew = seqnew.replace("\n","")
 					seqfin = seqrealnew.replace(" ","")
