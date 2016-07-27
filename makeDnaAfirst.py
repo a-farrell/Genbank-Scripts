@@ -5,6 +5,7 @@
 import os
 import re
 from optparse import OptionParser
+import re
 
 options = OptionParser(usage='%prog input output ',
                        description="Specify input gbk file and output file")
@@ -17,8 +18,6 @@ options.add_option("-i","--infile",dest="inputfile",
 
 
 ## First order the GBK genes
-
-
 
 ## Removes new line characters, spaces, numbers, and ORIGIN from sequence, so you can index freely
 def removeextra(string):
@@ -53,7 +52,16 @@ def getheaderandsequence(gbk):
 			b=1
 			sequence += line
 	result = removeextra(sequence)
-	return header, result
+	headers = header.replace("linear","circular")
+	return headers, result
+
+## Return the full length of the NT sequence
+def findlastNT(header):
+	headerarray = header.split("\n")
+	for line in headerarray:
+		if "     source          " in line:
+			locarray = re.findall(r'\d+', line)
+	return locarray[1]
 
 ## Create a dictionary with keys = gene # in ordered GBK and values are CDS portions of genes
 def creategenedict(file):
@@ -68,17 +76,146 @@ def creategenedict(file):
 		if i==0 and ( "     CDS             " in line or line[6:9] == "RNA"):
 			i=1
 			CDS += line
-		elif			
-	
-	
+		elif i==1 and ("     CDS             " in line or line[6:9] == 'RNA'):
+			genes[key] = CDS
+			CDS = ""
+			CDS += line
+			key += 1
+		elif "ORIGIN" in line or "BASE COUNT" in line:
+			genes[key] = CDS
+			i = 0
+		elif i==1 and "     CDS           " not in line:
+			CDS += line
+		elif i==1 and line[6:9] != 'RNA':
+			CDS += line
+	return genes, key	
 
+## Returns the gene number that contains DnaA	
+def findDnaA(dictionary):
+	for key, value in dictionary.items():
+		if "Chromosomal replication initiator protein DnaA" in value:
+			return key
+
+## Create new dictionary where DnaA is the first gene
+def reorderdictionary(dictionary,num,highest):
+	newdict = {}
+	CDS = " "
+	DnaA = ""
+	key = 1
+	DnaA = dictionary[num]
+	for i in range(1,highest+1):
+		CDS = dictionary[num]
+		newdict[key] = CDS
+		key +=1
+		num += 1
+		if num > highest:
+			num = 1
+	return newdict, DnaA
+
+## Determine what is the NT location of DnaA to reorder the sequence
+def findNTlocationofDnaA(CDS):
+	StartNT = 0
+	EndNT = 0
+	array = []
+	array = CDS.split("\n")
+	NTarray = re.findall(r'\d+', array[0])
+	StartNT = NTarray[0]
+	EndNT = NTarray[1]
+	return StartNT
+
+
+## Reorder NT sequence
+def createfinalsequence(prevseq,DnaAloc):
+	first = prevseq[DnaAloc-1:]
+	end = prevseq[:DnaAloc]
+	finalseq = first + end
+	return finalseq
+			
+## At this point, we have: a) put RNA genes in correct position, b) reorganize the sequence and c) reorganize CDS portion so DnaA is the first gene
+## All that is left to do is change the locations of the NTs in the CDS and print the sequence
+
+## Look through previous dictionary and create new one with correct NT locations 
+def changeNTlocations(dictionary,highest,sequencelength):
+	finaldict = {}
+	index = 1
+	pick1 = "     CDS             "
+	pick2 = "     tRNA            "
+	pick3 = "     rRNA            "
+	for i in range(highest):
+		if index == 1:
+			CDS = dictionary[index]
+			CDSarray = CDS.split("\n")
+			NTarray = re.findall(r'\d+', CDSarray[0])
+			StartNT = NTarray[0]
+			EndNT = NTarray[1]
+			distance = int(EndNT) - int(StartNT)
+			distance +=1
+			if "CDS" in CDSarray[0]:
+				firstline = pick1 + str('1') + ".." + str(distance) #+ "\n" 
+			elif "tRNA" in CDSarray[0]:
+				firstline = pick2 + str('1') + ".." + str(distance) #+ "\n" 
+			elif "rRNA" in CDSarray[0]:
+				firstline = pick3 + str('1') + ".." + str(distance) #+ "\n" 
+			finalCDS = ""
+			finalCDS += firstline
+			for line in CDSarray[1:]:
+				finalCDS += line
+			finaldict[index] = finalCDS	
+		else:	
+			previousCDS = dictionary[index-1]
+			prevCDSarray = previousCDS.split("\n")
+			prevNTarray = re.findall(r'\d+', prevCDSarray[0])
+			prevSNT = int(prevNTarray[0])
+			prevENT = int(prevNTarray[1])
+			currentCDS = dictionary[index]
+			currentCDSarray = currentCDS.split("\n")
+			currentNTarray = re.findall(r'\d+', currentCDSarray[0])
+			currentSNT = int(currentNTarray[0])
+			currentENT = int(currentNTarray[1])
+			## Handle the issue of overlapping from end of genome to start of genome 
+			currentgenelength = currentENT - currentSNT
+			CDSfromfinaldict = finaldict[index-1]
+			CDSarrayfromfinaldict = CDSfromfinaldict.split("\n")
+			NTarrayfromfinaldict = re.findall(r'\d+', CDSarrayfromfinaldict[0])
+			endingNTfromfinaldict = int(NTarrayfromfinaldict[1])
+			if currentSNT < 1000000 and prevENT > 1000000:   # Means that you have overlapped
+				newSNT = (sequencelength - prevENT) + currentSNT + endingNTfromfinaldict
+				newENT = newSNT + currentgenelength
+			else:
+				newSNT = endingNTfromfinaldict + (currentSNT - prevENT)
+				newENT = newSNT + currentgenelength
+			if "CDS" in CDSarray[0]:
+				firstline = pick1 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+			elif "tRNA" in CDSarray[0]:
+				firstline = pick2 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+			elif "rRNA" in CDSarray[0]:
+				firstline = pick3 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+			finalCDS = ""
+			finalCDS += firstline
+			for line in currentCDSarray[1:]:
+				finalCDS += line
+	
+			finaldict[index] = finalCDS
+		index += 1
+	return finaldict
+	
+	
 
 def main():
 	opts, args = options.parse_args()
 	head, seq = getheaderandsequence(opts.inputfile)
-	genes = creategenedict(opts.inputfile)
-
-main()
+	totalseqlen = int(findlastNT(head))
+	genes, highestindex = creategenedict(opts.inputfile)
+	number = findDnaA(genes)
+	newdict, DnaACDS = reorderdictionary(genes,number,highestindex)
+	firstNTofDnaA = int(findNTlocationofDnaA(DnaACDS))
+	finalsequence = createfinalsequence(seq,firstNTofDnaA)
+	finaldict = changeNTlocations(newdict,highestindex,totalseqlen)
+	print finaldict[2162]
+	
+	
+if __name__ == '__main__':
+    main()
 	
 	
 		
