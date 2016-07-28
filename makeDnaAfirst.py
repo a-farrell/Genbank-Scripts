@@ -2,18 +2,22 @@
 ## Author: Alexander Farrell
 ## July 25, 2016
 
+## Edited on July 28th 
+
 import os
 import re
 from optparse import OptionParser
-import re
+import sys
+import tempfile
+
 
 options = OptionParser(usage='%prog input output ',
                        description="Specify input gbk file and output file")
 
 options.add_option("-i","--infile",dest="inputfile",
                    help="Input file (.gbk)")
-#options.add_option("-o","--outfile",dest="outputfile",
-#                   help="Output file (.gbk)")
+options.add_option("-o","--outfile",dest="outputfile",
+                   help="Output file (.gbk)")
 
 
 
@@ -151,15 +155,15 @@ def changeNTlocations(dictionary,highest,sequencelength):
 			distance = int(EndNT) - int(StartNT)
 			distance +=1
 			if "CDS" in CDSarray[0]:
-				firstline = pick1 + str('1') + ".." + str(distance) #+ "\n" 
+				firstline = pick1 + str('1') + ".." + str(distance) + "\n" 
 			elif "tRNA" in CDSarray[0]:
-				firstline = pick2 + str('1') + ".." + str(distance) #+ "\n" 
+				firstline = pick2 + str('1') + ".." + str(distance) + "\n" 
 			elif "rRNA" in CDSarray[0]:
-				firstline = pick3 + str('1') + ".." + str(distance) #+ "\n" 
+				firstline = pick3 + str('1') + ".." + str(distance) + "\n" 
 			finalCDS = ""
 			finalCDS += firstline
 			for line in CDSarray[1:]:
-				finalCDS += line
+				finalCDS += line + "\n"
 			finaldict[index] = finalCDS	
 		else:	
 			previousCDS = dictionary[index-1]
@@ -185,21 +189,73 @@ def changeNTlocations(dictionary,highest,sequencelength):
 				newSNT = endingNTfromfinaldict + (currentSNT - prevENT)
 				newENT = newSNT + currentgenelength
 			if "CDS" in CDSarray[0]:
-				firstline = pick1 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+				firstline = pick1 + str(newSNT) + ".." + str(newENT) + " \n" 
 			elif "tRNA" in CDSarray[0]:
-				firstline = pick2 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+				firstline = pick2 + str(newSNT) + ".." + str(newENT) + " \n" 
 			elif "rRNA" in CDSarray[0]:
-				firstline = pick3 + str(newSNT) + ".." + str(newENT) #+ "\n" 
+				firstline = pick3 + str(newSNT) + ".." + str(newENT) + " \n" 
 			finalCDS = ""
 			finalCDS += firstline
 			for line in currentCDSarray[1:]:
-				finalCDS += line
-	
+				finalCDS += line + "\n"
 			finaldict[index] = finalCDS
 		index += 1
 	return finaldict
-	
-	
+
+# Write header, CDS information, then sequence into output gbk file
+def writegbk(file,finaldict,header,sequence):
+	a = open(file,'w+')
+	a.write(header)
+	for key, value in finaldict.items():
+		CDS = value
+		PartCDS = CDS.split('\n')
+		for line in PartCDS:
+			if "/transl_table" in line:
+				liner = line.replace("\n","")
+				a.write(liner)
+			else:
+				a.write(line)
+				a.write("\n")
+	a.write("ORIGIN")
+	a.write("\n")
+	linetowrite = ""
+	numbertowrite = 1
+	linecount = 0 
+	for char in sequence:
+		if numbertowrite % 60 == 1:
+			numstring = str(numbertowrite)
+			lenstring = len(numstring)
+			spaces = 9-lenstring
+			linetowrite += spaces*" " + numstring + " " + char
+		elif numbertowrite % 60 == 0:
+			linetowrite += char
+			a.write(linetowrite)
+			a.write("\n")
+			linetowrite = ""
+			linecount = -1
+		elif linecount % 10 == 0:
+			linetowrite += char + " "
+		else:
+			linetowrite += char
+		linecount += 1
+		numbertowrite += 1
+	a.write(linetowrite)
+	a.write("\n")
+	a.write("//")
+	a.close()
+
+## Remove any blank lines that appear in the GBK file
+def removeemptylines(file,otherfile):
+	a = open(file)
+	lines = a.readlines()
+	a.close()
+	f = open(otherfile,'w+')
+	for line in lines:
+		if line.strip():
+			f.write(line)
+	f.close()
+		
+
 
 def main():
 	opts, args = options.parse_args()
@@ -211,7 +267,8 @@ def main():
 	firstNTofDnaA = int(findNTlocationofDnaA(DnaACDS))
 	finalsequence = createfinalsequence(seq,firstNTofDnaA)
 	finaldict = changeNTlocations(newdict,highestindex,totalseqlen)
-	print finaldict[2162]
+	writegbk("Intermediate.gbk",finaldict,head,finalsequence)
+	removeemptylines("Intermediate.gbk",opts.outputfile)
 	
 	
 if __name__ == '__main__':
