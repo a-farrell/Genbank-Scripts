@@ -131,7 +131,7 @@ def findNTlocationofDnaA(CDS):
 ## Reorder NT sequence
 def createfinalsequence(prevseq,DnaAloc):
 	first = prevseq[DnaAloc-1:]
-	end = prevseq[:DnaAloc]
+	end = prevseq[:DnaAloc-1]
 	finalseq = first + end
 	return finalseq
 			
@@ -243,7 +243,7 @@ def writegbk(file,finaldict,header,sequence):
 			linetowrite = ""
 			linecount = -1
 		elif linecount % 10 == 0:
-			linetowrite += char + " "
+			linetowrite += " " + char
 		else:
 			linetowrite += char
 		linecount += 1
