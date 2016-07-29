@@ -188,12 +188,21 @@ def changeNTlocations(dictionary,highest,sequencelength):
 			else:
 				newSNT = endingNTfromfinaldict + (currentSNT - prevENT)
 				newENT = newSNT + currentgenelength
-			if "CDS" in CDSarray[0]:
-				firstline = pick1 + str(newSNT) + ".." + str(newENT) + " \n" 
-			elif "tRNA" in CDSarray[0]:
-				firstline = pick2 + str(newSNT) + ".." + str(newENT) + " \n" 
-			elif "rRNA" in CDSarray[0]:
-				firstline = pick3 + str(newSNT) + ".." + str(newENT) + " \n" 
+			if "CDS" in currentCDSarray[0]:
+				if "(" in currentCDSarray[0]:
+					firstline = pick1 + "complement(" + str(newSNT) + ".." + str(newENT) + ")" + " \n" 
+				else:
+					firstline = pick1 + str(newSNT) + ".." + str(newENT) + " \n" 
+			elif "tRNA" in currentCDSarray[0]:
+				if "(" in currentCDSarray[0]:
+					firstline = pick2 + "complement(" + str(newSNT) + ".." + str(newENT) + ")" + " \n"
+				else:
+					firstline = pick2 + str(newSNT) + ".." + str(newENT) + " \n" 
+			elif "rRNA" in currentCDSarray[0]:
+				if "(" in currentCDSarray[0]:
+					firstline = pick3 + "complement(" + str(newSNT) + ".." + str(newENT) + ")" + " \n"
+				else:
+					firstline = pick3 + str(newSNT) + ".." + str(newENT) + " \n" 
 			finalCDS = ""
 			finalCDS += firstline
 			for line in currentCDSarray[1:]:
@@ -255,7 +264,7 @@ def removeemptylines(file,otherfile):
 			f.write(line)
 	f.close()
 		
-
+## Main Function
 
 def main():
 	opts, args = options.parse_args()
